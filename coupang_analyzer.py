@@ -18,7 +18,7 @@ OUTPUT_CSV = "niche_score_report.csv"
 PRODUCTS_PER_CALL = 12  # 호출당 상품 수 (API 10~36)
 CALLS_PER_KEYWORD = 3  # 키워드당 API 호출 횟수 (가격 구간 대체)
 DELAY_BETWEEN_CALLS = 2
-TEST_LIMIT = 10
+TEST_LIMIT = 25
 MAX_WORKERS = 3  # 병렬 워커 수 (API rate limit 고려)
 
 # 정확도 레이팅
