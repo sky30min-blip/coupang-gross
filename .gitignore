@@ -1,0 +1,31 @@
+# API 키 (절대 커밋 금지 - *.example.py만 커밋하고, 복사 후 키 입력)
+config.py
+coupang_config.py
+naver_config.py
+naver_api_keys.py
+naver_searchad_config.py
+
+# DB 및 로그
+coupang_gross.db
+system.log
+error.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# Playwright / 런타임
+ms-playwright/
+no_results_log.txt
+wholesale_login_status.json
+final_sourcing_list.csv
+
+# 기타
+.DS_Store
+debug_screenshot.png
+debug_screenshots/
