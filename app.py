@@ -6,6 +6,8 @@
 import os
 import subprocess
 import sys
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -109,7 +111,7 @@ with _header_right:
         st.markdown("🔴 오너클랜")
     else:
         st.markdown("⚪ 오너클랜")
-    if st.button("상태 확인", key="btn_wholesale_check", help="로그인만 시도 후 신호등 갱신"):
+    if st.button("상태 확인", key="btn_wholesale_check", help="로그인 시도 후 신호등 갱신. 브라우저 창이 잠시 열립니다."):
         with st.spinner("확인 중..."):
             run_script("check_wholesale_login.py", "로그인 상태 확인")
         st.rerun()
@@ -145,141 +147,85 @@ def _add_validation_icon(df: pd.DataFrame, rocket_col: str = "rocket_count", vco
     return df
 
 
-# === 작업 실행 패널 (상단) ===
+# === 작업 실행 패널 (상단, 2줄로 정리) ===
 st.subheader("🚀 작업 실행")
-st.markdown("아래 버튼을 눌러 각 작업을 실행하세요. 실행 후 해당 탭에서 결과를 확인할 수 있습니다.")
+st.caption("버튼 클릭 후 해당 탭에서 결과를 확인하세요.")
 
-col1, col2, col3, col4, col5, col6, col7, col8, col9, col10 = st.columns(10)
-
-with col1:
-    if st.button(
-        "📥 네이버 트렌드 스크래핑",
-        key="btn_scraper",
-        help="네이버 데이터랩 쇼핑 인사이트에서 최근 1주일 인기 검색어를 수집하여 trending_keywords.csv에 저장합니다. 이후 쿠팡 분석 작업의 입력 데이터로 사용됩니다.",
-        use_container_width=True,
-    ):
-        with st.spinner("스크래핑 실행 중... (1~2분 소요)"):
+r1_1, r1_2, r1_3, r1_4, r1_5 = st.columns(5)
+with r1_1:
+    if st.button("📥 트렌드", key="btn_scraper", help="5개 카테고리 수집 → 검색량 순 전체 인기순 정렬 → trending_keywords.csv", use_container_width=True):
+        with st.spinner("수집·검색량 조회·정렬 중... (수 분 소요)"):
             out, code = run_script("naver_shopping_insight_scraper.py", "네이버 트렌드 스크래핑")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
-
-with col2:
-    if st.button(
-        "📈 쿠팡 시장성 분석",
-        key="btn_analyzer",
-        help="trending_keywords.csv를 읽어 쿠팡 파트너스 API로 상품을 분석하고, 진입 가능성 점수(Opportunity Score)를 계산하여 niche_score_report.csv에 저장합니다. 상위 10개 키워드만 분석합니다.",
-        use_container_width=True,
-    ):
-        with st.spinner("시장성 분석 실행 중... (약 30초~1분 소요)"):
+with r1_2:
+    if st.button("📈 시장성", key="btn_analyzer", help="쿠팡 시장성 분석 → niche_score_report.csv", use_container_width=True):
+        with st.spinner("분석 중..."):
             out, code = run_script("coupang_analyzer.py", "쿠팡 시장성 분석")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
-
-with col3:
-    if st.button(
-        "🔍 쿠팡 니치 분석",
-        key="btn_niche",
-        help="trending_keywords.csv를 읽어 쿠팡 파트너스 API로 로켓배송 상품 수, 평균가격, S/A/B 등급을 분석하여 niche_analysis.csv에 저장합니다. 최대 50개 키워드를 분석합니다.",
-        use_container_width=True,
-    ):
-        with st.spinner("니치 분석 실행 중... (2~5분 소요, API 제한 적용)"):
+with r1_3:
+    if st.button("🔍 니치분석", key="btn_niche", help="쿠팡 니치 분석 → niche_analysis.csv", use_container_width=True):
+        with st.spinner("니치 분석 중..."):
             out, code = run_script("niche_analysis.py", "쿠팡 니치 분석")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
-
-with col4:
-    if st.button(
-        "🧪 니치 테스트 (상위 20개)",
-        key="btn_niche_test",
-        help="trending_keywords.csv 상위 20개 키워드만 쿠팡에서 분석하여 niche_test.csv에 저장합니다. 빠른 테스트용입니다.",
-        use_container_width=True,
-    ):
-        with st.spinner("니치 테스트 실행 중... (약 1분 소요)"):
+with r1_4:
+    if st.button("🧪 니치테스트", key="btn_niche_test", help="상위 키워드 쿠팡 분석 → niche_test.csv", use_container_width=True):
+        with st.spinner("니치 테스트 중..."):
             out, code = run_script("niche_test.py", "니치 테스트")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
-
-with col5:
-    if st.button(
-        "🏪 도매 검색 (소싱 리스트)",
-        key="btn_wholesale",
-        help="niche_test.csv의 S/A등급 키워드를 도매꾹·오너클랜에서 검색하고, 광고비·수수료·배송비·부가세 반영 후 최종 순마진 15% 이상만 final_sourcing_list.csv로 저장합니다.",
-        use_container_width=True,
-    ):
-        with st.spinner("도매 검색 실행 중... (5~15분 소요, 키워드 수에 따라)"):
+with r1_5:
+    if st.button("🏪 도매검색", key="btn_wholesale", help="도매꾹·오너클랜 검색 → final_sourcing_list.csv", use_container_width=True):
+        with st.spinner("도매 검색 중..."):
             out, code = run_script("wholesale_searcher.py", "도매 검색")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
+        if code == 0:
+            st.rerun()
 
-with col6:
-    if st.button(
-        "📋 신뢰도 리포트",
-        key="btn_credibility",
-        help="niche_test.csv 키워드에 대해 Naver DataLab API로 검색 트렌드(1년)를 수집하고, 수요집중도·시즌성·안정성·독점가능성을 평가하여 market_credibility_report.csv로 저장합니다. 상위 5개 추이 그래프 이미지 저장.",
-        use_container_width=True,
-    ):
-        with st.spinner("신뢰도 리포트 생성 중... (1~2분 소요)"):
+r2_1, r2_2, r2_3, r2_4, r2_5 = st.columns(5)
+with r2_1:
+    if st.button("📋 신뢰도", key="btn_credibility", help="검색 트렌드·신뢰도 → market_credibility_report.csv", use_container_width=True):
+        with st.spinner("신뢰도 생성 중..."):
             out, code = run_script("market_credibility_report.py", "신뢰도 리포트")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
-
-with col7:
-    if st.button(
-        "📦 사입 적합성 필터",
-        key="btn_light",
-        help="가격 1.5~6만원, 부피 큰 품목 제외, 묶음(세트/키트/팩) 가산점 적용 후 light_weight_niche.xlsx 저장",
-        use_container_width=True,
-    ):
-        with st.spinner("사입 적합성 필터 적용 중..."):
+with r2_2:
+    if st.button("📦 사입적합", key="btn_light", help="경량·고마진 필터 → light_weight_niche.xlsx", use_container_width=True):
+        with st.spinner("사입 적합성 필터 중..."):
             out, code = run_script("light_weight_filter.py", "사입 적합성 필터")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
-
-with col8:
-    if st.button(
-        "🔄 마스터 파이프라인",
-        key="btn_main",
-        help="trending_keywords.csv → Products DB → 쿠팡 분석 → 업데이트. 로그: logs/system.log",
-        use_container_width=True,
-    ):
-        with st.spinner("마스터 파이프라인 실행 중... (2~5분)"):
+with r2_3:
+    if st.button("🔄 마스터", key="btn_main", help="트렌드→DB→분석 일괄 실행", use_container_width=True):
+        with st.spinner("마스터 파이프라인 중..."):
             out, code = run_script("run_master.py", "마스터 파이프라인")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
-
-with col9:
-    if st.button(
-        "📅 시즌 헌터",
-        key="btn_seasonal",
-        help="niche_test.csv 키워드 3년치 시즌 패턴 분석. 매년 특정 월에 폭등하는 반복 시즌 키워드 추출.",
-        use_container_width=True,
-    ):
-        with st.spinner("시즌 헌터 실행 중... (1~3분 소요)"):
+with r2_4:
+    if st.button("📅 시즌", key="btn_seasonal", help="3년 시즌 패턴 → seasonal_hunter_report.csv", use_container_width=True):
+        with st.spinner("시즌 헌터 중..."):
             out, code = run_script("seasonal_analyzer.py", "시즌 헌터")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
-
-with col10:
-    if st.button(
-        "📊 검색량 수집",
-        key="btn_volume",
-        help="niche_test.csv 키워드에 네이버 검색광고 API로 검색량 추가 → niche_with_volume.csv (검색량↑ 로켓↓ 순)",
-        use_container_width=True,
-    ):
-        with st.spinner("검색량 수집 중... (약 1~2분)"):
+with r2_5:
+    if st.button("📊 검색량", key="btn_volume", help="네이버 검색량 추가 → niche_with_volume.csv", use_container_width=True):
+        with st.spinner("검색량 수집 중..."):
             out, code = run_script("naver_api_manager.py", "검색량 수집")
         st.session_state["last_output"] = out
         st.session_state["last_code"] = code
 
+# 실행 로그: 접이식 (기본 접힌 상태)
 if "last_output" in st.session_state:
     code = st.session_state.get("last_code", 0)
-    st.divider()
-    st.caption("실행 결과")
-    if code == 0:
-        st.success("실행 완료")
-    else:
-        st.error("실행 중 오류가 발생했습니다.")
-    st.code(st.session_state["last_output"], language="text")
+    with st.expander("📜 실행 결과 로그", expanded=False):
+        if code == 0:
+            st.success("실행 완료")
+        else:
+            st.error("실행 중 오류가 발생했습니다.")
+        st.code(st.session_state["last_output"], language="text")
 
 st.divider()
 
@@ -373,6 +319,59 @@ with tab4:
         df = pd.read_csv(NICHE_TEST, encoding="utf-8-sig")
         st.subheader("쿠팡 니치 테스트 (상위 20개)")
         st.write(f"총 **{len(df)}**개 키워드 | 주황색 행 = 로켓 0 → 수동 검증 필요")
+
+        # 니치테스트 결과 요약 표: 제품명 / 쿠팡 최저·최고·평균 / 도매 검색결과 / 도매가(최저) / 소싱처
+        summary_rows = []
+        sourcing_df = pd.read_csv(FINAL_SOURCING, encoding="utf-8-sig") if FINAL_SOURCING.exists() else None
+        for _, row in df.iterrows():
+            kw = row.get("keyword", "")
+            c_min = row.get("min_price", None)
+            c_max = row.get("max_price", None)
+            c_avg = row.get("avg_price", row.get("평균가", ""))
+            if pd.isna(c_min):
+                c_min = ""
+            if pd.isna(c_max):
+                c_max = ""
+            if c_min != "" and int(c_min) == 0:
+                c_min = ""
+            if c_max != "" and int(c_max) == 0:
+                c_max = ""
+            src_row = None
+            if sourcing_df is not None and "키워드" in sourcing_df.columns:
+                match = sourcing_df[sourcing_df["키워드"].astype(str).str.strip() == str(kw).strip()]
+                src_row = match.iloc[0] if len(match) else None
+            has_sourcing = "있음" if src_row is not None else "없음"
+            wholesale_price = ""
+            source_name = ""
+            if src_row is not None:
+                wholesale_price = src_row.get("도매가(최저)", "")
+                source_name = src_row.get("최종 소싱처", "")
+            summary_rows.append({
+                "제품명": kw,
+                "쿠팡 최저가": c_min,
+                "쿠팡 최고가": c_max,
+                "쿠팡 평균가": c_avg,
+                "도매 검색결과": has_sourcing,
+                "도매가(최저)": wholesale_price,
+                "소싱처": source_name,
+            })
+        if summary_rows:
+            summary_df = pd.DataFrame(summary_rows)
+            def _fmt_price(val):
+                if val is None or val == "" or (isinstance(val, float) and pd.isna(val)):
+                    return "—"
+                try:
+                    n = int(float(str(val).replace(",", "")))
+                    return f"{n:,}" if n else "—"
+                except (ValueError, TypeError):
+                    return str(val) if val else "—"
+            summary_df["쿠팡 최저가"] = summary_df["쿠팡 최저가"].map(_fmt_price)
+            summary_df["쿠팡 최고가"] = summary_df["쿠팡 최고가"].map(_fmt_price)
+            summary_df["쿠팡 평균가"] = summary_df["쿠팡 평균가"].map(_fmt_price)
+            summary_df["도매가(최저)"] = summary_df["도매가(최저)"].map(_fmt_price)
+            st.caption("니치테스트 결과 요약")
+            st.dataframe(summary_df, use_container_width=True, hide_index=True)
+
         grade_filter = st.multiselect("등급 필터 ", ["S", "A", "B"], default=["S", "A"], key="grade_filter_test")
         df_filtered = df[df["grade"].isin(grade_filter)]
         col_map = {
@@ -481,13 +480,56 @@ with tab5:
 # === 탭6: 소싱 리스트 (final_sourcing_list) ===
 with tab6:
     if FINAL_SOURCING.exists():
-        df = pd.read_csv(FINAL_SOURCING, encoding="utf-8-sig")
-        st.subheader("최종 소싱 리스트 (최종 순마진 15% 이상)")
-        st.caption("광고비(15%)·수수료·배송비·부가세 반영 후 순이익 기준 (광고비 제외 후 순이익)")
-        st.write(f"총 **{len(df)}**건")
+        # 새로고침 버튼을 먼저 두어 클릭 시 바로 rerun 후 아래에서 파일 재로드
+        row1_col1, row1_col2 = st.columns([4, 1])
+        with row1_col2:
+            if st.button("🔄 새로고침", key="sourcing_refresh", help="최신 final_sourcing_list.csv 다시 불러오기"):
+                st.rerun()
+        # 매 렌더마다 파일을 디스크에서 다시 읽음 (캐시 없음)
+        csv_path = Path(FINAL_SOURCING)
+        df = pd.read_csv(csv_path, encoding="utf-8-sig")
+        with row1_col1:
+            st.subheader("최종 소싱 리스트 (최종 순마진 15% 이상)")
+            st.caption("광고비(15%)·수수료·배송비·부가세 반영 후 순이익 기준 (광고비 제외 후 순이익)")
+            st.write(f"총 **{len(df)}**건")
+            try:
+                mtime = csv_path.stat().st_mtime
+                mtime_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
+                st.caption(f"📁 CSV 파일 수정 시각: **{mtime_str}** (이 시각에 도매 검색이 저장한 결과입니다)")
+            except Exception:
+                pass
+        st.caption("💡 '새로고침' 클릭 시 위 파일 수정 시각이 바뀌었는지 확인하세요. 데이터가 그대로면 도매 검색을 다시 실행한 뒤 새로고침하세요.")
+        with st.expander("📌 한 달 검색량·태그·도매처링크가 비어 있는 이유"):
+            st.markdown("""
+            - **한 달 검색량**  
+              도매 검색 시 순마진 15% 이상인 키워드에 대해 **네이버 검색광고 API**로 조회합니다.  
+              비어 있으면 → `config.py`의 **CUSTOMER_ID, SECRET_KEY, ACCESS_LICENSE** 확인, [네이버 검색광고 API 사용 신청](https://manage.searchad.naver.com) 승인 여부 확인. 도매 검색 실행 시 터미널에 `[심화] 한 달 검색량: N회`가 안 보이면 API 호출이 실패한 것입니다.
+
+            - **태그**  
+              **한 달 검색량 5,000회 이상** 이면서 **순마진 15% 이상**일 때만 `[강력 추천]`이 붙습니다.  
+              한 달 검색량이 비어 있으면 태그도 비어 있습니다.
+
+            - **도매처링크**  
+              도매꾹/오너클랜에서 상품 **상세 페이지 URL**을 찾지 못하면 `검색결과없음`으로 저장됩니다.  
+              사이트 구조 변경·로그인 필요·셀렉터 불일치 시 링크가 수집되지 않을 수 있습니다. **도매 검색**을 다시 실행해도 계속 비어 있으면 도매 사이트 HTML 구조를 점검해야 합니다.
+            """)
+        df = df.copy()
+        # 열기: http(s)인 경우만 링크로 사용. 도매처링크는 항상 텍스트로 표시
+        if "도매처링크" in df.columns:
+            s = df["도매처링크"].astype(str).str.strip()
+            valid_url = s.str.startswith("http")
+            df["열기"] = df["도매처링크"].where(valid_url, pd.NA)
+        # NaN → 빈 칸 표시 ("None" 안 나오게)
+        for col in ["한 달 검색량", "태그"]:
+            if col in df.columns:
+                df[col] = df[col].fillna("").astype(str).replace({"None": "", "nan": ""})
+        if "열기" in df.columns:
+            df["열기"] = df["열기"].fillna("")
         col_config = {}
         if "도매처링크" in df.columns:
-            col_config["도매처링크"] = st.column_config.LinkColumn("도매처링크", display_text="열기")
+            col_config["도매처링크"] = st.column_config.TextColumn("도매처링크", help="도매 사이트 주소 또는 검색결과없음")
+        if "열기" in df.columns:
+            col_config["열기"] = st.column_config.LinkColumn("열기", display_text="열기", help="URL이 있을 때만 클릭 가능 (없으면 빈 칸)")
         if "쿠팡가" in df.columns:
             col_config["쿠팡가"] = st.column_config.NumberColumn("쿠팡가", format="%d원")
         if "도매가(최저)" in df.columns:
@@ -568,7 +610,7 @@ with tab9:
             fmt_cols = {c: "{:,.0f}" for c in ["평균가"] if c in df_display.columns}
             fmt_cols.update({c: "{:.1f}" for c in ["일관성점수", "진입점수", "네이버검색량"] if c in df_display.columns})
             if fmt_cols:
-                df_display = df_display.style.format(fmt_cols)
+                df_display = df_display.style.format(fmt_cols, na_rep="-")
             st.dataframe(df_display, use_container_width=True, hide_index=True)
         except Exception as e:
             st.error(f"DB 조회 오류: {e}")

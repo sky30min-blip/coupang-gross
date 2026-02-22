@@ -12,7 +12,7 @@ from coupang_api import search_products
 # 설정
 TRENDING_CSV = "trending_keywords.csv"
 OUTPUT_CSV = "niche_analysis.csv"
-PRODUCTS_PER_KEYWORD = 20  # API 샘플링 한계 보완 (10~36)
+PRODUCTS_PER_KEYWORD = 10  # 쿠팡 API limit 허용 범위 내 (limit is out of range 방지)
 MAX_KEYWORDS = 50
 DELAY_BETWEEN_CALLS = 2
 
@@ -108,7 +108,7 @@ def main():
                 rows.append(row)
 
     rows = rows[:MAX_KEYWORDS]
-    print(f"분석 대상: {len(rows)}개 키워드 (API 호출 간 {DELAY_BETWEEN_CALLS}초 대기)")
+    print(f"분석 대상: {len(rows)}개 키워드 (전체 상위 {len(rows)}개, API 호출 간 {DELAY_BETWEEN_CALLS}초 대기)")
     print("(API 제한: 시간당 10회 권장. 너무 많은 호출 시 차단될 수 있음)")
     print()
 

@@ -10,8 +10,8 @@ from coupang_api import search_products
 
 TRENDING_CSV = "trending_keywords.csv"
 OUTPUT_CSV = "niche_test.csv"
-PRODUCTS_PER_KEYWORD = 20  # API 샘플링 한계 보완 (10~36)
-MAX_KEYWORDS = 20
+PRODUCTS_PER_KEYWORD = 10  # 쿠팡 API limit 허용 범위 내
+MAX_KEYWORDS = 50
 DELAY_BETWEEN_CALLS = 2
 
 
@@ -27,6 +27,8 @@ def analyze_keyword_api(keyword: str, access_key: str, secret_key: str, try_visu
     result = {
         "rocket_count": 0,
         "total_products": 0,
+        "min_price": 0,
+        "max_price": 0,
         "avg_price": 0,
         "max_reviews": 0,
         "grade": "B",
@@ -71,6 +73,8 @@ def analyze_keyword_api(keyword: str, access_key: str, secret_key: str, try_visu
                 pass
 
     result["rocket_count"] = rocket_count
+    result["min_price"] = min(prices) if prices else 0
+    result["max_price"] = max(prices) if prices else 0
     result["avg_price"] = round(sum(prices) / len(prices), 0) if prices else 0
     result["grade"] = get_grade(rocket_count)
 
@@ -134,6 +138,8 @@ def main():
             "change_trend": row.get("change_trend", ""),
             "rocket_count": data["rocket_count"],
             "total_products": data["total_products"],
+            "min_price": int(data.get("min_price", 0)),
+            "max_price": int(data.get("max_price", 0)),
             "avg_price": int(data["avg_price"]),
             "max_reviews": data["max_reviews"],
             "grade": data["grade"],
@@ -143,7 +149,7 @@ def main():
         time.sleep(DELAY_BETWEEN_CALLS)
 
     out_path = Path(OUTPUT_CSV)
-    fieldnames = ["category", "rank", "keyword", "change_trend", "rocket_count", "total_products", "avg_price", "max_reviews", "grade", "verification_needed"]
+    fieldnames = ["category", "rank", "keyword", "change_trend", "rocket_count", "total_products", "min_price", "max_price", "avg_price", "max_reviews", "grade", "verification_needed"]
     with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()

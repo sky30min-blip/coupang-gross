@@ -8,6 +8,7 @@ niche_test.csv를 읽어 '데이터 기반 진입 신뢰도 리포트' 생성
 """
 
 import csv
+import platform
 import re
 import time
 from datetime import datetime, timedelta
@@ -193,6 +194,11 @@ def save_chart(keyword: str, periods: list, ratios: list, out_dir: Path):
         import matplotlib.font_manager as fm
     except ImportError:
         return
+
+    # 한글 폰트 설정 (Glyph missing 방지)
+    if platform.system() == "Windows":
+        plt.rcParams["font.family"] = "Malgun Gothic"
+    plt.rcParams["axes.unicode_minus"] = False  # 마이너스 기호 깨짐 방지
 
     if not periods or not ratios:
         return

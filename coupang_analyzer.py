@@ -15,10 +15,10 @@ from coupang_api import search_products
 # 설정
 TRENDING_CSV = "trending_keywords.csv"
 OUTPUT_CSV = "niche_score_report.csv"
-PRODUCTS_PER_CALL = 12  # 호출당 상품 수 (API 10~36)
+PRODUCTS_PER_CALL = 10  # 쿠팡 API limit 허용 범위 내
 CALLS_PER_KEYWORD = 3  # 키워드당 API 호출 횟수 (가격 구간 대체)
 DELAY_BETWEEN_CALLS = 2
-TEST_LIMIT = 25
+TEST_LIMIT = 50
 MAX_WORKERS = 3  # 병렬 워커 수 (API rate limit 고려)
 
 # 정확도 레이팅

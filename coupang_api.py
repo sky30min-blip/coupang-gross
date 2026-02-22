@@ -42,6 +42,7 @@ def search_products(
     쿠팡 파트너스 API - 상품 검색
     subId: 채널 ID (미입력 시 일부 계정에서 data 미반환될 수 있음)
     """
+    time.sleep(1.5)  # API 차단 방지: 요청 간격 유지
     encoded_kw = quote(keyword, safe="", encoding="utf-8")
     query_string = f"keyword={encoded_kw}&limit={limit}&subId={sub_id}"
     # 참고: 쿠팡 파트너스 API는 minPrice/maxPrice 미지원. 향후 지원 시 사용.
@@ -69,8 +70,10 @@ def search_products(
             print(f"  [API 오류] HTTP {resp.status_code}: {resp.text[:200]}")
             return None
         data = resp.json()
-        if data.get("rCode") == "ERROR" or data.get("code") == "ERROR":
-            print(f"  [API 오류] {data.get('message', data.get('rMessage', 'Unknown'))}")
+        rcode = data.get("rCode") or data.get("code")
+        if rcode == "ERROR" or rcode == "400" or (isinstance(rcode, int) and rcode >= 400):
+            msg = data.get("rMessage") or data.get("message", "Unknown")
+            print(f"  [API 오류] rCode: {rcode} | rMessage: {msg}")
             return None
         return data
     except Exception as e:
